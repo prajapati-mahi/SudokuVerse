@@ -1,56 +1,57 @@
-import { useState } from "react";
+import { useEffect } from "react";
 import { useParams } from "react-router-dom";
 
 import SudokuBoard from "../components/SudokuBoard";
 import GameControls from "../components/GameControls";
 import NumberPad from "../components/NumberPad";
 
+import { useGameStore } from "../store/useGameStore";
+
 export default function Game() {
   const { size, difficulty } = useParams();
 
-  const gridSize = size === "2x2" ? 4 : size === "3x3" ? 9 : 16;
+  const {
+    puzzleGrid,
+    userGrid,
+    selectedCell,
+    setSelectedCell,
+    enterNumber,
+    eraseCell,
+    undoMove,
+    redoMove,
+    useHint,
+    togglePencil,
+    isPencilMode,
+    hintsLeft,
+    isGameOver,
+    isGameWon,
+    mistakes,
+    score,
+    setPuzzle,
+    setGameConfig,
+  } = useGameStore();
 
-  // Temporary empty board for testing
-  const initialBoard = Array.from({ length: gridSize }, () =>
-    Array.from({ length: gridSize }, () => 0)
-  );
+  // Temporary puzzle setup for testing
+  useEffect(() => {
+    setGameConfig(size, difficulty);
 
-  const [board, setBoard] = useState(initialBoard);
-  const [selectedCell, setSelectedCell] = useState(null);
+    const gridSize = size === "2x2" ? 4 : size === "3x3" ? 9 : 16;
 
-  const [isPencilMode, setIsPencilMode] = useState(false);
-  const [hintsLeft, setHintsLeft] = useState(3);
-  const [isPaused, setIsPaused] = useState(false);
+    const emptyPuzzle = Array.from({ length: gridSize }, () =>
+      Array.from({ length: gridSize }, () => 0)
+    );
 
-  const [theme, setTheme] = useState("classic");
-  const [isSoundOn, setIsSoundOn] = useState(true);
+    const emptySolution = Array.from({ length: gridSize }, () =>
+      Array.from({ length: gridSize }, () => 1)
+    );
 
-  // Dummy functions (logic will be added later)
-  const handleEraser = () => {
-    alert("Eraser clicked (logic will be added later)");
-  };
-
-  const handleUndo = () => {
-    alert("Undo clicked (logic will be added later)");
-  };
-
-  const handleRedo = () => {
-    alert("Redo clicked (logic will be added later)");
-  };
-
-  const handleHint = () => {
-    if (hintsLeft > 0) {
-      setHintsLeft(hintsLeft - 1);
-      alert("Hint used (logic will be added later)");
-    }
-  };
-
-  const handlePause = () => {
-    setIsPaused(!isPaused);
-  };
+    setPuzzle(emptyPuzzle, emptySolution);
+  }, [size, difficulty, setPuzzle, setGameConfig]);
 
   const handleNumberClick = (num) => {
-    alert(`You clicked number: ${num}`);
+    if (!isGameOver && !isGameWon) {
+      enterNumber(num);
+    }
   };
 
   return (
@@ -62,31 +63,47 @@ export default function Game() {
         <span className="text-pink-400">{difficulty}</span>
       </p>
 
+      <div className="flex justify-center gap-6 mt-4 text-white/80">
+        <p>Score: <span className="text-green-400 font-bold">{score}</span></p>
+        <p>Mistakes: <span className="text-red-400 font-bold">{mistakes}/3</span></p>
+      </div>
+
       <SudokuBoard
-        board={board}
+        board={userGrid}
         size={size}
         selectedCell={selectedCell}
-        setSelectedCell={setSelectedCell}
+        setSelectedCell={(cell) => setSelectedCell(cell.row, cell.col)}
       />
 
       <GameControls
         isPencilMode={isPencilMode}
-        setIsPencilMode={setIsPencilMode}
-        handleEraser={handleEraser}
-        handleUndo={handleUndo}
-        handleRedo={handleRedo}
-        handleHint={handleHint}
-        handlePause={handlePause}
-        isPaused={isPaused}
+        setIsPencilMode={togglePencil}
+        handleEraser={eraseCell}
+        handleUndo={undoMove}
+        handleRedo={redoMove}
+        handleHint={useHint}
+        handlePause={() => alert("Pause will be added later")}
+        isPaused={false}
         hintsLeft={hintsLeft}
-        theme={theme}
-        setTheme={setTheme}
-        isSoundOn={isSoundOn}
-        setIsSoundOn={setIsSoundOn}
+        theme={"classic"}
+        setTheme={() => {}}
+        isSoundOn={true}
+        setIsSoundOn={() => {}}
       />
 
-      {/* Number Pad */}
       <NumberPad size={size} onNumberClick={handleNumberClick} />
+
+      {isGameOver && (
+        <div className="text-center mt-6 text-red-500 font-bold text-2xl">
+          Game Over! ❌
+        </div>
+      )}
+
+      {isGameWon && (
+        <div className="text-center mt-6 text-green-400 font-bold text-2xl">
+          Congratulations! You Won 🎉
+        </div>
+      )}
     </div>
   );
 }
