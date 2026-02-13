@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { isPuzzleSolved } from "../utils/sudokuValidator";
-
+import { calculateFinalScore } from "../utils/scoreCalculator";
 
 export const useGameStore = create((set, get) => ({
   // =========================
@@ -80,26 +80,18 @@ export const useGameStore = create((set, get) => ({
   calculateScore: () => {
     const { difficulty, timeElapsed, mistakes, hintsLeft } = get();
 
-    let baseScore = 0;
-
-    if (difficulty === "beginner") baseScore = 200;
-    else if (difficulty === "easy") baseScore = 400;
-    else if (difficulty === "medium") baseScore = 600;
-    else if (difficulty === "hard") baseScore = 800;
-    else if (difficulty === "expert") baseScore = 1000;
-    else if (difficulty === "extreme") baseScore = 1200;
-
     const hintsUsed = 3 - hintsLeft;
 
-    const hintPenalty = hintsUsed * 50;
-    const mistakePenalty = mistakes * 30;
-
-    const timeBonus = Math.max(0, 500 - Math.floor(timeElapsed / 2));
-
-    const finalScore = baseScore + timeBonus - hintPenalty - mistakePenalty;
+    const finalScore = calculateFinalScore(
+        difficulty,
+        timeElapsed,
+        mistakes,
+        hintsUsed
+    );
 
     set({ score: finalScore });
   },
+
 
   enterNumber: (num) => {
     const {
@@ -331,7 +323,10 @@ export const useGameStore = create((set, get) => ({
     });
   },
 
-  setTimeElapsed: (time) => {
-    set({ timeElapsed: time });
+  setTimeElapsed: (callback) => {
+    set((state) => ({
+        timeElapsed: typeof callback === "function" ? callback(state.timeElapsed) : callback,
+    }));
   },
+
 }));

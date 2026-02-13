@@ -95,12 +95,9 @@ export default function GameControls({
       {/* Pause */}
       <button
         onClick={handlePause}
-        className={`flex items-center gap-2 px-4 py-2 rounded-xl font-semibold transition
-        ${
-          isPaused
-            ? "bg-red-500 text-white hover:bg-red-600"
-            : "bg-green-500 text-white hover:bg-green-600"
-        }`}
+        handlePause={() => setIsPaused(!isPaused)}
+isPaused={isPaused}
+
       >
         <Pause size={18} />
         {isPaused ? "Resume" : "Pause"}

@@ -2,6 +2,8 @@ import { useEffect } from "react";
 import { useParams } from "react-router-dom";
 import GameOverModal from "../components/GameOverModal";
 import WinModal from "../components/WinModal";
+import TopBar from "../components/TopBar";
+import useTimer from "../hooks/useTimer";
 
 import SudokuBoard from "../components/SudokuBoard";
 import GameControls from "../components/GameControls";
@@ -11,6 +13,9 @@ import { useGameStore } from "../store/useGameStore";
 
 export default function Game() {
   const { size, difficulty } = useParams();
+  const [isPaused, setIsPaused] = useState(false);
+  useTimer(isPaused, isGameOver, isGameWon, setTimeElapsed);
+
 
   const {
     puzzleGrid,
@@ -32,6 +37,8 @@ export default function Game() {
     setPuzzle,
     setGameConfig,
     resetGame,
+    timeElapsed,
+    setTimeElapsed,
   } = useGameStore();
 
   // Temporary puzzle setup for testing
@@ -80,14 +87,22 @@ export default function Game() {
         handleUndo={undoMove}
         handleRedo={redoMove}
         handleHint={useHint}
-        handlePause={() => alert("Pause will be added later")}
-        isPaused={false}
+        handlePause={() => setIsPaused(!isPaused)}
+        isPaused={isPaused}
         hintsLeft={hintsLeft}
         theme={"classic"}
         setTheme={() => {}}
         isSoundOn={true}
         setIsSoundOn={() => {}}
       />
+
+      <TopBar
+        score={score}
+        mistakes={mistakes}
+        timeElapsed={timeElapsed}
+        hintsLeft={hintsLeft}
+      />
+
 
       <NumberPad size={size} onNumberClick={handleNumberClick} />
 
