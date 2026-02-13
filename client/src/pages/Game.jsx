@@ -1,13 +1,16 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
+
 import SudokuBoard from "../components/SudokuBoard";
 import GameControls from "../components/GameControls";
+import NumberPad from "../components/NumberPad";
 
 export default function Game() {
   const { size, difficulty } = useParams();
 
   const gridSize = size === "2x2" ? 4 : size === "3x3" ? 9 : 16;
 
+  // Temporary empty board for testing
   const initialBoard = Array.from({ length: gridSize }, () =>
     Array.from({ length: gridSize }, () => 0)
   );
@@ -22,7 +25,7 @@ export default function Game() {
   const [theme, setTheme] = useState("classic");
   const [isSoundOn, setIsSoundOn] = useState(true);
 
-  // Dummy functions (we will implement properly later)
+  // Dummy functions (logic will be added later)
   const handleEraser = () => {
     alert("Eraser clicked (logic will be added later)");
   };
@@ -44,6 +47,10 @@ export default function Game() {
 
   const handlePause = () => {
     setIsPaused(!isPaused);
+  };
+
+  const handleNumberClick = (num) => {
+    alert(`You clicked number: ${num}`);
   };
 
   return (
@@ -77,6 +84,9 @@ export default function Game() {
         isSoundOn={isSoundOn}
         setIsSoundOn={setIsSoundOn}
       />
+
+      {/* Number Pad */}
+      <NumberPad size={size} onNumberClick={handleNumberClick} />
     </div>
   );
 }
