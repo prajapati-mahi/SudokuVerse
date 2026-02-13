@@ -1,4 +1,6 @@
 import { create } from "zustand";
+import { isPuzzleSolved } from "../utils/sudokuValidator";
+
 
 export const useGameStore = create((set, get) => ({
   // =========================
@@ -177,14 +179,13 @@ export const useGameStore = create((set, get) => ({
     set({ pencilMarks: updatedMarks });
 
     // Check if solved
-    const isSolved = newGrid.every((r, rIndex) =>
-      r.every((val, cIndex) => val === solutionGrid[rIndex][cIndex])
-    );
+    const solved = isPuzzleSolved(newGrid, solutionGrid);
 
-    if (isSolved) {
-      set({ isGameWon: true });
-      get().calculateScore();
+    if (solved) {
+        set({ isGameWon: true });
+        get().calculateScore();
     }
+
   },
 
   eraseCell: () => {

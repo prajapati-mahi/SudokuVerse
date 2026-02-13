@@ -1,5 +1,7 @@
 import { useEffect } from "react";
 import { useParams } from "react-router-dom";
+import GameOverModal from "../components/GameOverModal";
+import WinModal from "../components/WinModal";
 
 import SudokuBoard from "../components/SudokuBoard";
 import GameControls from "../components/GameControls";
@@ -29,6 +31,7 @@ export default function Game() {
     score,
     setPuzzle,
     setGameConfig,
+    resetGame,
   } = useGameStore();
 
   // Temporary puzzle setup for testing
@@ -63,11 +66,6 @@ export default function Game() {
         <span className="text-pink-400">{difficulty}</span>
       </p>
 
-      <div className="flex justify-center gap-6 mt-4 text-white/80">
-        <p>Score: <span className="text-green-400 font-bold">{score}</span></p>
-        <p>Mistakes: <span className="text-red-400 font-bold">{mistakes}/3</span></p>
-      </div>
-
       <SudokuBoard
         board={userGrid}
         size={size}
@@ -93,17 +91,10 @@ export default function Game() {
 
       <NumberPad size={size} onNumberClick={handleNumberClick} />
 
-      {isGameOver && (
-        <div className="text-center mt-6 text-red-500 font-bold text-2xl">
-          Game Over! ❌
-        </div>
-      )}
-
-      {isGameWon && (
-        <div className="text-center mt-6 text-green-400 font-bold text-2xl">
-          Congratulations! You Won 🎉
-        </div>
-      )}
+      {/* ✅ ADD MODALS HERE (JUST BEFORE CLOSING DIV) */}
+      {isGameOver && <GameOverModal onRestart={resetGame} />}
+      {isGameWon && <WinModal score={score} onRestart={resetGame} />}
     </div>
   );
+
 }
