@@ -5,6 +5,9 @@ export default function SudokuBoard({
   size,
   selectedCell,
   setSelectedCell,
+  highlightedCell,
+  highlightedRow,
+  highlightedCol,
 }) {
   const gridSize = size === "2x2" ? 4 : size === "3x3" ? 9 : 16;
   const boxSize = size === "2x2" ? 2 : size === "3x3" ? 3 : 4;
@@ -34,7 +37,13 @@ export default function SudokuBoard({
               Math.floor(selectedCell.col / boxSize) ===
                 Math.floor(colIndex / boxSize);
 
-            // Thick borders for box separation
+            const isHintCell =
+              highlightedCell?.row === rowIndex &&
+              highlightedCell?.col === colIndex;
+
+            const isHintRow = highlightedRow === rowIndex;
+            const isHintCol = highlightedCol === colIndex;
+
             const borderClasses = `
               border border-white/20
               ${colIndex % boxSize === 0 ? "border-l-4 border-l-white/30" : ""}
@@ -49,6 +58,9 @@ export default function SudokuBoard({
             if (isSameBox) bgColor = "bg-purple-500/10";
             if (isSelected) bgColor = "bg-yellow-500/30";
 
+            if (isHintRow || isHintCol) bgColor = "bg-yellow-500/20";
+            if (isHintCell) bgColor = "bg-red-500/40";
+
             return (
               <button
                 key={`${rowIndex}-${colIndex}`}
@@ -56,6 +68,7 @@ export default function SudokuBoard({
                 className={`
                   ${borderClasses}
                   ${bgColor}
+                  ${isHintCell ? "animate-pulse" : ""}
                   flex items-center justify-center
                   text-white font-semibold
                   hover:bg-yellow-500/20

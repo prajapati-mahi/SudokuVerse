@@ -35,7 +35,6 @@ export default function GameControls({
 
   return (
     <div className="mt-6 bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-wrap justify-center gap-4 shadow-lg backdrop-blur-md">
-      
       {/* Pencil */}
       <button
         onClick={() => setIsPencilMode(!isPencilMode)}
@@ -89,15 +88,18 @@ export default function GameControls({
         }`}
       >
         <Lightbulb size={18} />
-        Hint ({hintsLeft})
+        💡 {hintsLeft} / 3
       </button>
 
       {/* Pause */}
       <button
         onClick={handlePause}
-        handlePause={() => setIsPaused(!isPaused)}
-isPaused={isPaused}
-
+        className={`flex items-center gap-2 px-4 py-2 rounded-xl font-semibold transition
+        ${
+          isPaused
+            ? "bg-red-500 text-white hover:bg-red-600"
+            : "bg-green-500 text-white hover:bg-green-600"
+        }`}
       >
         <Pause size={18} />
         {isPaused ? "Resume" : "Pause"}

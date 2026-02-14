@@ -1,28 +1,25 @@
 import { create } from "zustand";
-import { isPuzzleSolved } from "../utils/sudokuValidator";
 import { calculateFinalScore } from "../utils/scoreCalculator";
+import { findWrongCell, getCandidates } from "../utils/hintSystem";
+import { isPuzzleSolved } from "../utils/sudokuValidator";
 
 export const useGameStore = create((set, get) => ({
-  // =========================
-  // GAME STATE VARIABLES
-  // =========================
-
   size: "3x3",
   difficulty: "easy",
 
-  puzzleGrid: [], // original puzzle (fixed numbers)
-  solutionGrid: [], // solved grid
-  userGrid: [], // what user is filling
+  puzzleGrid: [],
+  solutionGrid: [],
+  userGrid: [],
 
-  pencilMarks: {}, // { "row-col": [1,2,3] }
+  pencilMarks: {},
 
-  selectedCell: null, // {row, col}
+  selectedCell: null,
 
   mistakes: 0,
   score: 0,
   hintsLeft: 3,
 
-  timeElapsed: 0, // in seconds
+  timeElapsed: 0,
 
   undoStack: [],
   redoStack: [],
@@ -32,9 +29,12 @@ export const useGameStore = create((set, get) => ({
 
   isPencilMode: false,
 
-  // =========================
-  // ACTIONS / FUNCTIONS
-  // =========================
+  // Hint UI state
+  hintMessage: "",
+  highlightedCell: null,
+  highlightedRow: null,
+  highlightedCol: null,
+  candidatesList: [],
 
   setGameConfig: (size, difficulty) => {
     set({ size, difficulty });
@@ -44,7 +44,7 @@ export const useGameStore = create((set, get) => ({
     set({
       puzzleGrid,
       solutionGrid,
-      userGrid: JSON.parse(JSON.stringify(puzzleGrid)), // deep copy
+      userGrid: JSON.parse(JSON.stringify(puzzleGrid)),
       pencilMarks: {},
       mistakes: 0,
       score: 0,
@@ -56,6 +56,11 @@ export const useGameStore = create((set, get) => ({
       isGameWon: false,
       selectedCell: null,
       isPencilMode: false,
+      hintMessage: "",
+      highlightedCell: null,
+      highlightedRow: null,
+      highlightedCol: null,
+      candidatesList: [],
     });
   },
 
@@ -65,6 +70,13 @@ export const useGameStore = create((set, get) => ({
 
   togglePencil: () => {
     set({ isPencilMode: !get().isPencilMode });
+  },
+
+  setTimeElapsed: (callback) => {
+    set((state) => ({
+      timeElapsed:
+        typeof callback === "function" ? callback(state.timeElapsed) : callback,
+    }));
   },
 
   incrementMistake: () => {
@@ -79,19 +91,17 @@ export const useGameStore = create((set, get) => ({
 
   calculateScore: () => {
     const { difficulty, timeElapsed, mistakes, hintsLeft } = get();
-
     const hintsUsed = 3 - hintsLeft;
 
     const finalScore = calculateFinalScore(
-        difficulty,
-        timeElapsed,
-        mistakes,
-        hintsUsed
+      difficulty,
+      timeElapsed,
+      mistakes,
+      hintsUsed
     );
 
     set({ score: finalScore });
   },
-
 
   enterNumber: (num) => {
     const {
@@ -108,12 +118,11 @@ export const useGameStore = create((set, get) => ({
 
     const { row, col } = selectedCell;
 
-    // If cell is fixed (original puzzle), do nothing
     if (puzzleGrid[row][col] !== 0) return;
 
     const key = `${row}-${col}`;
 
-    // Save current state for undo
+    // Save for undo
     set({
       undoStack: [
         ...undoStack,
@@ -128,13 +137,13 @@ export const useGameStore = create((set, get) => ({
       redoStack: [],
     });
 
-    // Pencil mode logic
+    // Pencil Mode
     if (isPencilMode) {
       const existingNotes = pencilMarks[key] || [];
 
       if (existingNotes.includes(num)) {
-        // remove note
         const updatedNotes = existingNotes.filter((n) => n !== num);
+
         set({
           pencilMarks: {
             ...pencilMarks,
@@ -142,7 +151,6 @@ export const useGameStore = create((set, get) => ({
           },
         });
       } else {
-        // add note
         set({
           pencilMarks: {
             ...pencilMarks,
@@ -150,34 +158,31 @@ export const useGameStore = create((set, get) => ({
           },
         });
       }
-
       return;
     }
 
-    // Normal mode (place number)
+    // Normal placement
     const newGrid = JSON.parse(JSON.stringify(userGrid));
     newGrid[row][col] = num;
 
-    // Check correctness
     if (solutionGrid[row][col] !== num) {
       get().incrementMistake();
     }
 
     set({ userGrid: newGrid });
 
-    // Clear pencil marks after placing number
+    // Clear pencil marks for that cell
     const updatedMarks = { ...pencilMarks };
     delete updatedMarks[key];
     set({ pencilMarks: updatedMarks });
 
-    // Check if solved
+    // Check solved
     const solved = isPuzzleSolved(newGrid, solutionGrid);
 
     if (solved) {
-        set({ isGameWon: true });
-        get().calculateScore();
+      set({ isGameWon: true });
+      get().calculateScore();
     }
-
   },
 
   eraseCell: () => {
@@ -187,12 +192,10 @@ export const useGameStore = create((set, get) => ({
 
     const { row, col } = selectedCell;
 
-    // fixed cell cannot be erased
     if (puzzleGrid[row][col] !== 0) return;
 
     const key = `${row}-${col}`;
 
-    // Save for undo
     set({
       undoStack: [
         ...undoStack,
@@ -271,33 +274,74 @@ export const useGameStore = create((set, get) => ({
   },
 
   useHint: () => {
-    const { selectedCell, puzzleGrid, userGrid, solutionGrid, hintsLeft } = get();
+    const { selectedCell, puzzleGrid, userGrid, solutionGrid, hintsLeft, size } =
+      get();
 
-    if (!selectedCell) return;
     if (hintsLeft <= 0) return;
 
-    const { row, col } = selectedCell;
+    const boxSize = size === "2x2" ? 2 : size === "3x3" ? 3 : 4;
 
-    // fixed cell can't take hint
-    if (puzzleGrid[row][col] !== 0) return;
-
-    const newGrid = JSON.parse(JSON.stringify(userGrid));
-    newGrid[row][col] = solutionGrid[row][col];
-
+    // Clear previous hint state
     set({
-      userGrid: newGrid,
-      hintsLeft: hintsLeft - 1,
+      hintMessage: "",
+      highlightedCell: null,
+      highlightedRow: null,
+      highlightedCol: null,
+      candidatesList: [],
     });
 
-    // Check if solved after hint
-    const isSolved = newGrid.every((r, rIndex) =>
-      r.every((val, cIndex) => val === solutionGrid[rIndex][cIndex])
-    );
+    // Random hint type
+    const hintType = Math.floor(Math.random() * 3) + 1;
 
-    if (isSolved) {
-      set({ isGameWon: true });
-      get().calculateScore();
+    // 1) Wrong cell highlight
+    if (hintType === 1) {
+      const wrongCell = findWrongCell(userGrid, solutionGrid, puzzleGrid);
+
+      if (wrongCell) {
+        set({
+          highlightedCell: wrongCell,
+          hintMessage: "❌ A wrong cell is highlighted!",
+          hintsLeft: hintsLeft - 1,
+        });
+        return;
+      }
     }
+
+    // 2) Row/Column highlight
+    if (hintType === 2 && selectedCell) {
+      set({
+        highlightedRow: selectedCell.row,
+        highlightedCol: selectedCell.col,
+        hintMessage: "⚡ Check this row & column for conflicts!",
+        hintsLeft: hintsLeft - 1,
+      });
+      return;
+    }
+
+    // 3) Candidates list
+    if (hintType === 3 && selectedCell) {
+      const { row, col } = selectedCell;
+
+      if (puzzleGrid[row][col] !== 0) {
+        set({
+          hintMessage: "⚠️ Fixed cell selected. Choose an empty cell!",
+        });
+        return;
+      }
+
+      const candidates = getCandidates(userGrid, row, col, boxSize);
+
+      set({
+        candidatesList: candidates,
+        hintMessage: "✅ Possible candidates are shown below.",
+        hintsLeft: hintsLeft - 1,
+      });
+      return;
+    }
+
+    set({
+      hintMessage: "⚠️ No hint available right now. Select a cell first!",
+    });
   },
 
   resetGame: () => {
@@ -320,13 +364,11 @@ export const useGameStore = create((set, get) => ({
       isGameOver: false,
       isGameWon: false,
       isPencilMode: false,
+      hintMessage: "",
+      highlightedCell: null,
+      highlightedRow: null,
+      highlightedCol: null,
+      candidatesList: [],
     });
   },
-
-  setTimeElapsed: (callback) => {
-    set((state) => ({
-        timeElapsed: typeof callback === "function" ? callback(state.timeElapsed) : callback,
-    }));
-  },
-
 }));

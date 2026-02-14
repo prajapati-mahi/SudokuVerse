@@ -1,24 +1,23 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import GameOverModal from "../components/GameOverModal";
-import WinModal from "../components/WinModal";
-import TopBar from "../components/TopBar";
-import useTimer from "../hooks/useTimer";
 
 import SudokuBoard from "../components/SudokuBoard";
 import GameControls from "../components/GameControls";
 import NumberPad from "../components/NumberPad";
+import TopBar from "../components/TopBar";
+
+import GameOverModal from "../components/GameOverModal";
+import WinModal from "../components/WinModal";
+
+import useTimer from "../hooks/useTimer";
 
 import { useGameStore } from "../store/useGameStore";
 
 export default function Game() {
   const { size, difficulty } = useParams();
   const [isPaused, setIsPaused] = useState(false);
-  useTimer(isPaused, isGameOver, isGameWon, setTimeElapsed);
-
 
   const {
-    puzzleGrid,
     userGrid,
     selectedCell,
     setSelectedCell,
@@ -34,14 +33,20 @@ export default function Game() {
     isGameWon,
     mistakes,
     score,
-    setPuzzle,
-    setGameConfig,
     resetGame,
     timeElapsed,
     setTimeElapsed,
+    setPuzzle,
+    setGameConfig,
+
+    // Hint UI states
+    hintMessage,
+    highlightedCell,
+    highlightedRow,
+    highlightedCol,
+    candidatesList,
   } = useGameStore();
 
-  // Temporary puzzle setup for testing
   useEffect(() => {
     setGameConfig(size, difficulty);
 
@@ -51,15 +56,18 @@ export default function Game() {
       Array.from({ length: gridSize }, () => 0)
     );
 
-    const emptySolution = Array.from({ length: gridSize }, () =>
+    // Dummy solution for now (later we will generate real puzzle)
+    const dummySolution = Array.from({ length: gridSize }, () =>
       Array.from({ length: gridSize }, () => 1)
     );
 
-    setPuzzle(emptyPuzzle, emptySolution);
+    setPuzzle(emptyPuzzle, dummySolution);
   }, [size, difficulty, setPuzzle, setGameConfig]);
 
+  useTimer(isPaused, isGameOver, isGameWon, setTimeElapsed);
+
   const handleNumberClick = (num) => {
-    if (!isGameOver && !isGameWon) {
+    if (!isGameOver && !isGameWon && !isPaused) {
       enterNumber(num);
     }
   };
@@ -73,12 +81,50 @@ export default function Game() {
         <span className="text-pink-400">{difficulty}</span>
       </p>
 
+      <TopBar
+        score={score}
+        mistakes={mistakes}
+        timeElapsed={timeElapsed}
+        hintsLeft={hintsLeft}
+      />
+
       <SudokuBoard
         board={userGrid}
         size={size}
         selectedCell={selectedCell}
         setSelectedCell={(cell) => setSelectedCell(cell.row, cell.col)}
+        highlightedCell={highlightedCell}
+        highlightedRow={highlightedRow}
+        highlightedCol={highlightedCol}
       />
+
+      {/* Hint Message UI */}
+      {hintMessage && (
+        <div className="mt-4 flex justify-center">
+          <div className="bg-blue-500/20 border border-blue-400/30 text-white px-6 py-3 rounded-xl shadow-lg">
+            {hintMessage}
+          </div>
+        </div>
+      )}
+
+      {/* Candidates List UI */}
+      {candidatesList.length > 0 && (
+        <div className="mt-4 flex justify-center">
+          <div className="bg-purple-500/20 border border-purple-400/30 text-white px-6 py-3 rounded-xl shadow-lg">
+            <p className="font-semibold mb-2">Candidates:</p>
+            <div className="flex flex-wrap gap-2">
+              {candidatesList.map((num) => (
+                <span
+                  key={num}
+                  className="px-3 py-1 rounded-lg bg-white/10 font-bold"
+                >
+                  {num}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       <GameControls
         isPencilMode={isPencilMode}
@@ -96,20 +142,10 @@ export default function Game() {
         setIsSoundOn={() => {}}
       />
 
-      <TopBar
-        score={score}
-        mistakes={mistakes}
-        timeElapsed={timeElapsed}
-        hintsLeft={hintsLeft}
-      />
-
-
       <NumberPad size={size} onNumberClick={handleNumberClick} />
 
-      {/* ✅ ADD MODALS HERE (JUST BEFORE CLOSING DIV) */}
       {isGameOver && <GameOverModal onRestart={resetGame} />}
       {isGameWon && <WinModal score={score} onRestart={resetGame} />}
     </div>
   );
-
 }
