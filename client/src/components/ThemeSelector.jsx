@@ -12,11 +12,11 @@ export default function ThemeSelector() {
         onChange={(e) => setTheme(e.target.value)}
         className="bg-white/10 text-white px-3 py-2 rounded-xl border border-white/10 outline-none cursor-pointer"
       >
-        <option value="classic">Classic</option>
-        <option value="neon">Neon</option>
-        <option value="minimal">Minimal</option>
-        <option value="night">Night Mode</option>
-        <option value="colorblind">Colorblind</option>
+        <option className="text-black" value="classic">Classic</option>
+        <option className="text-black" value="neon">Neon</option>
+        <option className="text-black" value="minimal">Minimal</option>
+        <option className="text-black" value="night">Night Mode</option>
+        <option className="text-black" value="colorblind">Colorblind</option>
       </select>
     </div>
   );
