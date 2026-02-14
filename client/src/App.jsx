@@ -2,6 +2,9 @@ import { Routes, Route } from "react-router-dom";
 
 import Navbar from "./components/Navbar";
 
+import { useGameStore } from "./store/useGameStore";
+import { themes } from "./utils/themeConfig";
+
 import Home from "./pages/Home";
 import Play from "./pages/Play";
 import Game from "./pages/Game";
@@ -14,8 +17,11 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 
 export default function App() {
+  const { theme } = useGameStore();
+  const currentTheme = themes[theme];
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-black">
+    <div className="min-h-screen ${currentTheme.background}">
       <Navbar />
 
       <Routes>

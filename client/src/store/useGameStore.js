@@ -6,6 +6,7 @@ import { isPuzzleSolved } from "../utils/sudokuValidator";
 export const useGameStore = create((set, get) => ({
   size: "3x3",
   difficulty: "easy",
+  theme: localStorage.getItem("sudokuverse-theme") || "classic",
 
   puzzleGrid: [],
   solutionGrid: [],
@@ -38,6 +39,11 @@ export const useGameStore = create((set, get) => ({
 
   setGameConfig: (size, difficulty) => {
     set({ size, difficulty });
+  },
+
+  setTheme: (newTheme) => {
+    localStorage.setItem("sudokuverse-theme", newTheme);
+    set({ theme: newTheme });
   },
 
   setPuzzle: (puzzleGrid, solutionGrid) => {
