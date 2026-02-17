@@ -1,17 +1,15 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import GameSummaryModal from "../components/GameSummaryModal";
 
 import SudokuBoard from "../components/SudokuBoard";
 import GameControls from "../components/GameControls";
 import NumberPad from "../components/NumberPad";
 import TopBar from "../components/TopBar";
 
-import GameOverModal from "../components/GameOverModal";
-import WinModal from "../components/WinModal";
 import { soundManager } from "../utils/soundManager";
 
 import useTimer from "../hooks/useTimer";
-
 import { useGameStore } from "../store/useGameStore";
 
 export default function Game() {
@@ -69,20 +67,37 @@ export default function Game() {
 
   const handleNumberClick = (num) => {
     if (!isGameOver && !isGameWon && !isPaused) {
+      soundManager.playSound("click");
       enterNumber(num);
     }
+  };
+
+  const hintsUsed = 3 - hintsLeft;
+
+  const accuracy =
+    mistakes === 0
+      ? 100
+      : Math.max(0, Math.round(((3 - mistakes) / 3) * 100));
+
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}m ${secs}s`;
   };
 
   return (
     <div className="text-white p-6">
       <h1 className="text-3xl font-bold text-center">SudokuVerse 🧩</h1>
 
-      <button
-        onClick={() => soundManager.playSound("click")}
-        className="bg-green-500 px-4 py-2 rounded-lg mb-4"
-      >
-        Test Click Sound
-      </button>
+      {/* Test Sound Button */}
+      <div className="flex justify-center mt-4">
+        <button
+          onClick={() => soundManager.playSound("click")}
+          className="bg-green-500 px-4 py-2 rounded-lg mb-4 font-semibold hover:bg-green-600 transition"
+        >
+          Test Click Sound
+        </button>
+      </div>
 
       <p className="text-center mt-2 text-white/70">
         Size: <span className="text-blue-400">{size}</span> | Difficulty:{" "}
@@ -116,7 +131,7 @@ export default function Game() {
       )}
 
       {/* Candidates List UI */}
-      {candidatesList.length > 0 && (
+      {candidatesList && candidatesList.length > 0 && (
         <div className="mt-4 flex justify-center">
           <div className="bg-purple-500/20 border border-purple-400/30 text-white px-6 py-3 rounded-xl shadow-lg">
             <p className="font-semibold mb-2">Candidates:</p>
@@ -152,8 +167,32 @@ export default function Game() {
 
       <NumberPad size={size} onNumberClick={handleNumberClick} />
 
-      {isGameOver && <GameOverModal onRestart={resetGame} />}
-      {isGameWon && <WinModal score={score} onRestart={resetGame} />}
+      {/* Summary Modal */}
+      {isGameWon && (
+        <GameSummaryModal
+          status="win"
+          timeTaken={formatTime(timeElapsed)}
+          mistakes={mistakes}
+          hintsUsed={hintsUsed}
+          accuracy={accuracy}
+          finalScore={score}
+          onReplay={resetGame}
+          onNextLevel={() => window.location.reload()}
+        />
+      )}
+
+      {isGameOver && (
+        <GameSummaryModal
+          status="lose"
+          timeTaken={formatTime(timeElapsed)}
+          mistakes={mistakes}
+          hintsUsed={hintsUsed}
+          accuracy={accuracy}
+          finalScore={score}
+          onReplay={resetGame}
+          onNextLevel={() => window.location.reload()}
+        />
+      )}
     </div>
   );
 }
