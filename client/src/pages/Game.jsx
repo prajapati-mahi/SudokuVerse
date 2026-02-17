@@ -8,6 +8,7 @@ import TopBar from "../components/TopBar";
 
 import GameOverModal from "../components/GameOverModal";
 import WinModal from "../components/WinModal";
+import { soundManager } from "../utils/soundManager";
 
 import useTimer from "../hooks/useTimer";
 
@@ -75,6 +76,13 @@ export default function Game() {
   return (
     <div className="text-white p-6">
       <h1 className="text-3xl font-bold text-center">SudokuVerse 🧩</h1>
+
+      <button
+        onClick={() => soundManager.playSound("click")}
+        className="bg-green-500 px-4 py-2 rounded-lg mb-4"
+      >
+        Test Click Sound
+      </button>
 
       <p className="text-center mt-2 text-white/70">
         Size: <span className="text-blue-400">{size}</span> | Difficulty:{" "}
