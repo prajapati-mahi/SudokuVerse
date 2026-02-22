@@ -1,7 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
 
-const Game = ({ puzzleId }) => {
+const API = "http://localhost:5000/api";
+
+export default function Game({ puzzleId }) {
+
+  const token = localStorage.getItem("token");
 
   const [grid, setGrid] = useState([]);
   const [pencilMarks, setPencilMarks] = useState({});
@@ -9,79 +13,93 @@ const Game = ({ puzzleId }) => {
   const [mistakes, setMistakes] = useState(0);
   const [hintsLeft, setHintsLeft] = useState(3);
   const [score, setScore] = useState(0);
+  const [loading, setLoading] = useState(true);
 
-  const token = localStorage.getItem("token");
+  const timerRef = useRef(null);
 
-  const API = "http://localhost:5000/api";
-
-  /* ===============================
-        LOAD SAVED GAME OR PUZZLE
-  =============================== */
+  /* ===================================================
+        LOAD SAVED GAME OR NEW PUZZLE
+  =================================================== */
 
   useEffect(() => {
-    const loadGame = async () => {
-      try {
-        // ✅ Try loading saved progress
-        const saved = await axios.get(
-          `${API}/game/load/${puzzleId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
 
-        if (saved.data) {
-          setGrid(saved.data.currentGrid);
-          setPencilMarks(saved.data.pencilMarks || {});
-          setTimeElapsed(saved.data.timeElapsed || 0);
-          setMistakes(saved.data.mistakes || 0);
-          setHintsLeft(saved.data.hintsLeft || 3);
-          setScore(saved.data.score || 0);
-          return;
+    const loadGame = async () => {
+
+      try {
+
+        // ✅ Try loading saved game
+        if (puzzleId) {
+          const saved = await axios.get(
+            `${API}/game/load/${puzzleId}`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+
+          if (saved.data) {
+            setGrid(saved.data.currentGrid || []);
+            setPencilMarks(saved.data.pencilMarks || {});
+            setTimeElapsed(saved.data.timeElapsed || 0);
+            setMistakes(saved.data.mistakes || 0);
+            setHintsLeft(saved.data.hintsLeft ?? 3);
+            setScore(saved.data.score || 0);
+
+            setLoading(false);
+            return;
+          }
         }
-      } catch (err) {
-        console.log("No saved game found");
+
+      } catch {
+        console.log("No saved game");
       }
 
-      // ✅ Otherwise load new puzzle
+      // ✅ Generate new puzzle
       const res = await axios.get(
         `${API}/puzzle/generate?size=3x3&difficulty=medium`
       );
 
       setGrid(res.data.puzzleGrid);
+      setLoading(false);
     };
 
     loadGame();
-  }, [puzzleId]);
+
+  }, [puzzleId, token]);
 
 
 
-  /* ===============================
-            TIMER
-  =============================== */
+  /* ===================================================
+                      TIMER
+  =================================================== */
 
   useEffect(() => {
-    const timer = setInterval(() => {
+
+    if (loading) return;
+
+    timerRef.current = setInterval(() => {
       setTimeElapsed(prev => prev + 1);
     }, 1000);
 
-    return () => clearInterval(timer);
-  }, []);
+    return () => clearInterval(timerRef.current);
+
+  }, [loading]);
 
 
 
-
-  /* ===============================
-          AUTOSAVE (20 sec)
-  =============================== */
+  /* ===================================================
+                    AUTOSAVE
+  =================================================== */
 
   useEffect(() => {
 
-    if (!grid.length) return;
+    if (!grid.length || !puzzleId) return;
 
-    const interval = setInterval(async () => {
+    const autosave = setInterval(async () => {
+
       try {
+
         await axios.post(
           `${API}/game/save`,
           {
@@ -100,15 +118,15 @@ const Game = ({ puzzleId }) => {
           }
         );
 
-        console.log("✅ Game Autosaved");
+        console.log("✅ Autosaved");
 
-      } catch (error) {
+      } catch {
         console.log("Autosave failed");
       }
 
     }, 20000);
 
-    return () => clearInterval(interval);
+    return () => clearInterval(autosave);
 
   }, [
     grid,
@@ -117,31 +135,46 @@ const Game = ({ puzzleId }) => {
     mistakes,
     hintsLeft,
     score,
+    puzzleId,
+    token,
   ]);
 
 
 
-  /* ===============================
-          CELL UPDATE
-  =============================== */
+  /* ===================================================
+                  CELL UPDATE
+  =================================================== */
 
   const updateCell = (row, col, value) => {
 
-    const newGrid = [...grid];
-    newGrid[row][col] = Number(value);
+    const num = Number(value);
+
+    const newGrid =
+      grid.map(r => [...r]); // ✅ deep copy
+
+    newGrid[row][col] = isNaN(num) ? 0 : num;
 
     setGrid(newGrid);
   };
 
 
 
-  /* ===============================
-            UI GRID
-  =============================== */
+  /* ===================================================
+                      LOADING UI
+  =================================================== */
+
+  if (loading)
+    return <h2 style={{ textAlign: "center" }}>Loading Puzzle...</h2>;
+
+
+
+  /* ===================================================
+                      GAME UI
+  =================================================== */
 
   return (
     <div style={{ textAlign: "center" }}>
-      <h2>Sudoku Game</h2>
+      <h2>🧩 SudokuVerse</h2>
 
       <p>⏱ Time: {timeElapsed}s</p>
       <p>❌ Mistakes: {mistakes}</p>
@@ -154,13 +187,14 @@ const Game = ({ puzzleId }) => {
           gridTemplateColumns: `repeat(${grid.length}, 40px)`,
           justifyContent: "center",
           gap: "5px",
+          marginTop: "20px"
         }}
       >
         {grid.map((row, r) =>
           row.map((cell, c) => (
             <input
               key={`${r}-${c}`}
-              value={cell === 0 ? "" : cell}
+              value={cell || ""}
               onChange={(e) =>
                 updateCell(r, c, e.target.value)
               }
@@ -176,6 +210,4 @@ const Game = ({ puzzleId }) => {
       </div>
     </div>
   );
-};
-
-export default Game;
+}
