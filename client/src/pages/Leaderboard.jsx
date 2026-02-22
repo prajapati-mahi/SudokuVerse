@@ -1,7 +1,107 @@
-export default function Play() {
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+
+const Leaderboard = () => {
+
+  const [players, setPlayers] = useState([]);
+  const [activeTab, setActiveTab] = useState("score");
+
+  const API = "http://localhost:5000/api";
+
+  /* ======================
+        FETCH DATA
+  ====================== */
+
+  useEffect(() => {
+    const fetchLeaderboard = async () => {
+      try {
+        const res = await axios.get(
+          `${API}/leaderboard/global`
+        );
+
+        setPlayers(res.data);
+      } catch (err) {
+        console.log("Leaderboard fetch failed");
+      }
+    };
+
+    fetchLeaderboard();
+  }, []);
+
+
+
+  /* ======================
+        SORTING LOGIC
+  ====================== */
+
+  const sortedPlayers = [...players].sort((a, b) => {
+
+    if (activeTab === "score")
+      return b.score - a.score;
+
+    if (activeTab === "time")
+      return a.timeTaken - b.timeTaken;
+
+    if (activeTab === "mistakes")
+      return a.mistakes - b.mistakes;
+
+    return 0;
+  });
+
+
+
+  /* ======================
+          UI
+  ====================== */
+
   return (
-    <div className="text-white text-3xl font-bold p-6">
-      Leaderboard Page 🎮
+    <div style={{ textAlign: "center" }}>
+      <h2>🏆 Leaderboard</h2>
+
+      {/* Tabs */}
+      <div>
+        <button onClick={() => setActiveTab("score")}>
+          🏆 Highest Score
+        </button>
+
+        <button onClick={() => setActiveTab("time")}>
+          ⚡ Fastest Time
+        </button>
+
+        <button onClick={() => setActiveTab("mistakes")}>
+          🎯 Lowest Mistakes
+        </button>
+      </div>
+
+      <br />
+
+      {/* Table */}
+      <table border="1" align="center">
+        <thead>
+          <tr>
+            <th>Rank</th>
+            <th>User</th>
+            <th>Score</th>
+            <th>Time</th>
+            <th>Mistakes</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {sortedPlayers.map((player, index) => (
+            <tr key={index}>
+              <td>{index + 1}</td>
+              <td>{player.userId?.name || "Player"}</td>
+              <td>{player.score}</td>
+              <td>{player.timeTaken}s</td>
+              <td>{player.mistakes}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
     </div>
   );
-}
+};
+
+export default Leaderboard;

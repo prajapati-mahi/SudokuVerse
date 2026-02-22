@@ -4,6 +4,7 @@ const mongoose = require("mongoose");
 const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
 const puzzleRoutes = require("./routes/puzzleRoutes");
+const leaderboardRoutes = require("./routes/leaderboardRoutes");
 
 
 require("dotenv").config();
@@ -21,7 +22,7 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/puzzle", puzzleRoutes);
-
+app.use("/api/leaderboard", leaderboardRoutes);
 
 
 

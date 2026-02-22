@@ -6,6 +6,7 @@ import Play from "./pages/Play";
 import Game from "./pages/Game";
 import Daily from "./pages/Daily";
 import Leaderboard from "./pages/Leaderboard";
+
 import Battle from "./pages/Battle";
 import Profile from "./pages/Profile";
 import Achievements from "./pages/Achievements";
