@@ -9,6 +9,10 @@ const puzzleRoutes = require("./routes/puzzleRoutes");
 require("dotenv").config();
 
 const app = express();
+const gameRoutes = require("./routes/gameRoutes");
+
+app.use("/api/game", gameRoutes);
+
 
 // Middleware
 app.use(cors());

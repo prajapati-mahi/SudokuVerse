@@ -1,198 +1,181 @@
-import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import GameSummaryModal from "../components/GameSummaryModal";
+import React, { useEffect, useState } from "react";
+import axios from "axios";
 
-import SudokuBoard from "../components/SudokuBoard";
-import GameControls from "../components/GameControls";
-import NumberPad from "../components/NumberPad";
-import TopBar from "../components/TopBar";
+const Game = ({ puzzleId }) => {
 
-import { soundManager } from "../utils/soundManager";
+  const [grid, setGrid] = useState([]);
+  const [pencilMarks, setPencilMarks] = useState({});
+  const [timeElapsed, setTimeElapsed] = useState(0);
+  const [mistakes, setMistakes] = useState(0);
+  const [hintsLeft, setHintsLeft] = useState(3);
+  const [score, setScore] = useState(0);
 
-import useTimer from "../hooks/useTimer";
-import { useGameStore } from "../store/useGameStore";
+  const token = localStorage.getItem("token");
 
-export default function Game() {
-  const { size, difficulty } = useParams();
-  const [isPaused, setIsPaused] = useState(false);
+  const API = "http://localhost:5000/api";
 
-  const {
-    userGrid,
-    selectedCell,
-    setSelectedCell,
-    enterNumber,
-    eraseCell,
-    undoMove,
-    redoMove,
-    useHint,
-    togglePencil,
-    isPencilMode,
-    hintsLeft,
-    isGameOver,
-    isGameWon,
-    mistakes,
-    score,
-    resetGame,
-    timeElapsed,
-    setTimeElapsed,
-    setPuzzle,
-    setGameConfig,
-
-    // Hint UI states
-    hintMessage,
-    highlightedCell,
-    highlightedRow,
-    highlightedCol,
-    candidatesList,
-  } = useGameStore();
+  /* ===============================
+        LOAD SAVED GAME OR PUZZLE
+  =============================== */
 
   useEffect(() => {
-    setGameConfig(size, difficulty);
+    const loadGame = async () => {
+      try {
+        // ✅ Try loading saved progress
+        const saved = await axios.get(
+          `${API}/game/load/${puzzleId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
 
-    const gridSize = size === "2x2" ? 4 : size === "3x3" ? 9 : 16;
+        if (saved.data) {
+          setGrid(saved.data.currentGrid);
+          setPencilMarks(saved.data.pencilMarks || {});
+          setTimeElapsed(saved.data.timeElapsed || 0);
+          setMistakes(saved.data.mistakes || 0);
+          setHintsLeft(saved.data.hintsLeft || 3);
+          setScore(saved.data.score || 0);
+          return;
+        }
+      } catch (err) {
+        console.log("No saved game found");
+      }
 
-    const emptyPuzzle = Array.from({ length: gridSize }, () =>
-      Array.from({ length: gridSize }, () => 0)
-    );
+      // ✅ Otherwise load new puzzle
+      const res = await axios.get(
+        `${API}/puzzle/generate?size=3x3&difficulty=medium`
+      );
 
-    // Dummy solution for now (later we will generate real puzzle)
-    const dummySolution = Array.from({ length: gridSize }, () =>
-      Array.from({ length: gridSize }, () => 1)
-    );
+      setGrid(res.data.puzzleGrid);
+    };
 
-    setPuzzle(emptyPuzzle, dummySolution);
-  }, [size, difficulty, setPuzzle, setGameConfig]);
+    loadGame();
+  }, [puzzleId]);
 
-  useTimer(isPaused, isGameOver, isGameWon, setTimeElapsed);
 
-  const handleNumberClick = (num) => {
-    if (!isGameOver && !isGameWon && !isPaused) {
-      soundManager.playSound("click");
-      enterNumber(num);
-    }
+
+  /* ===============================
+            TIMER
+  =============================== */
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeElapsed(prev => prev + 1);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+
+
+
+  /* ===============================
+          AUTOSAVE (20 sec)
+  =============================== */
+
+  useEffect(() => {
+
+    if (!grid.length) return;
+
+    const interval = setInterval(async () => {
+      try {
+        await axios.post(
+          `${API}/game/save`,
+          {
+            puzzleId,
+            currentGrid: grid,
+            pencilMarks,
+            timeElapsed,
+            mistakes,
+            hintsLeft,
+            score,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        console.log("✅ Game Autosaved");
+
+      } catch (error) {
+        console.log("Autosave failed");
+      }
+
+    }, 20000);
+
+    return () => clearInterval(interval);
+
+  }, [
+    grid,
+    pencilMarks,
+    timeElapsed,
+    mistakes,
+    hintsLeft,
+    score,
+  ]);
+
+
+
+  /* ===============================
+          CELL UPDATE
+  =============================== */
+
+  const updateCell = (row, col, value) => {
+
+    const newGrid = [...grid];
+    newGrid[row][col] = Number(value);
+
+    setGrid(newGrid);
   };
 
-  const hintsUsed = 3 - hintsLeft;
 
-  const accuracy =
-    mistakes === 0
-      ? 100
-      : Math.max(0, Math.round(((3 - mistakes) / 3) * 100));
 
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}m ${secs}s`;
-  };
+  /* ===============================
+            UI GRID
+  =============================== */
 
   return (
-    <div className="text-white p-6">
-      <h1 className="text-3xl font-bold text-center">SudokuVerse 🧩</h1>
+    <div style={{ textAlign: "center" }}>
+      <h2>Sudoku Game</h2>
 
-      {/* Test Sound Button */}
-      <div className="flex justify-center mt-4">
-        <button
-          onClick={() => soundManager.playSound("click")}
-          className="bg-green-500 px-4 py-2 rounded-lg mb-4 font-semibold hover:bg-green-600 transition"
-        >
-          Test Click Sound
-        </button>
+      <p>⏱ Time: {timeElapsed}s</p>
+      <p>❌ Mistakes: {mistakes}</p>
+      <p>💡 Hints Left: {hintsLeft}</p>
+      <p>⭐ Score: {score}</p>
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: `repeat(${grid.length}, 40px)`,
+          justifyContent: "center",
+          gap: "5px",
+        }}
+      >
+        {grid.map((row, r) =>
+          row.map((cell, c) => (
+            <input
+              key={`${r}-${c}`}
+              value={cell === 0 ? "" : cell}
+              onChange={(e) =>
+                updateCell(r, c, e.target.value)
+              }
+              style={{
+                width: "40px",
+                height: "40px",
+                textAlign: "center",
+                fontSize: "18px",
+              }}
+            />
+          ))
+        )}
       </div>
-
-      <p className="text-center mt-2 text-white/70">
-        Size: <span className="text-blue-400">{size}</span> | Difficulty:{" "}
-        <span className="text-pink-400">{difficulty}</span>
-      </p>
-
-      <TopBar
-        score={score}
-        mistakes={mistakes}
-        timeElapsed={timeElapsed}
-        hintsLeft={hintsLeft}
-      />
-
-      <SudokuBoard
-        board={userGrid}
-        size={size}
-        selectedCell={selectedCell}
-        setSelectedCell={(cell) => setSelectedCell(cell.row, cell.col)}
-        highlightedCell={highlightedCell}
-        highlightedRow={highlightedRow}
-        highlightedCol={highlightedCol}
-      />
-
-      {/* Hint Message UI */}
-      {hintMessage && (
-        <div className="mt-4 flex justify-center">
-          <div className="bg-blue-500/20 border border-blue-400/30 text-white px-6 py-3 rounded-xl shadow-lg">
-            {hintMessage}
-          </div>
-        </div>
-      )}
-
-      {/* Candidates List UI */}
-      {candidatesList && candidatesList.length > 0 && (
-        <div className="mt-4 flex justify-center">
-          <div className="bg-purple-500/20 border border-purple-400/30 text-white px-6 py-3 rounded-xl shadow-lg">
-            <p className="font-semibold mb-2">Candidates:</p>
-            <div className="flex flex-wrap gap-2">
-              {candidatesList.map((num) => (
-                <span
-                  key={num}
-                  className="px-3 py-1 rounded-lg bg-white/10 font-bold"
-                >
-                  {num}
-                </span>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      <GameControls
-        isPencilMode={isPencilMode}
-        setIsPencilMode={togglePencil}
-        handleEraser={eraseCell}
-        handleUndo={undoMove}
-        handleRedo={redoMove}
-        handleHint={useHint}
-        handlePause={() => setIsPaused(!isPaused)}
-        isPaused={isPaused}
-        hintsLeft={hintsLeft}
-        theme={"classic"}
-        setTheme={() => {}}
-        isSoundOn={true}
-        setIsSoundOn={() => {}}
-      />
-
-      <NumberPad size={size} onNumberClick={handleNumberClick} />
-
-      {/* Summary Modal */}
-      {isGameWon && (
-        <GameSummaryModal
-          status="win"
-          timeTaken={formatTime(timeElapsed)}
-          mistakes={mistakes}
-          hintsUsed={hintsUsed}
-          accuracy={accuracy}
-          finalScore={score}
-          onReplay={resetGame}
-          onNextLevel={() => window.location.reload()}
-        />
-      )}
-
-      {isGameOver && (
-        <GameSummaryModal
-          status="lose"
-          timeTaken={formatTime(timeElapsed)}
-          mistakes={mistakes}
-          hintsUsed={hintsUsed}
-          accuracy={accuracy}
-          finalScore={score}
-          onReplay={resetGame}
-          onNextLevel={() => window.location.reload()}
-        />
-      )}
     </div>
   );
-}
+};
+
+export default Game;
