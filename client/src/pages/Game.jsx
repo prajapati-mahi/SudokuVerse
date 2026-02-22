@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import axios from "axios";
 
 const API = "http://localhost:5000/api";
@@ -8,26 +8,28 @@ export default function Game({ puzzleId }) {
   const token = localStorage.getItem("token");
 
   const [grid, setGrid] = useState([]);
-  const [pencilMarks, setPencilMarks] = useState({});
+  const [solution, setSolution] = useState([]);
+
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [mistakes, setMistakes] = useState(0);
   const [hintsLeft, setHintsLeft] = useState(3);
   const [score, setScore] = useState(0);
+
   const [loading, setLoading] = useState(true);
+  const [gameWon, setGameWon] = useState(false);
 
   const timerRef = useRef(null);
 
-  /* ===================================================
+  /* =====================================================
         LOAD SAVED GAME OR NEW PUZZLE
-  =================================================== */
+  ===================================================== */
 
   useEffect(() => {
 
     const loadGame = async () => {
-
       try {
 
-        // ✅ Try loading saved game
+        // ✅ Try resume
         if (puzzleId) {
           const saved = await axios.get(
             `${API}/game/load/${puzzleId}`,
@@ -39,13 +41,11 @@ export default function Game({ puzzleId }) {
           );
 
           if (saved.data) {
-            setGrid(saved.data.currentGrid || []);
-            setPencilMarks(saved.data.pencilMarks || {});
+            setGrid(saved.data.currentGrid);
             setTimeElapsed(saved.data.timeElapsed || 0);
             setMistakes(saved.data.mistakes || 0);
-            setHintsLeft(saved.data.hintsLeft ?? 3);
+            setHintsLeft(saved.data.hintsLeft || 3);
             setScore(saved.data.score || 0);
-
             setLoading(false);
             return;
           }
@@ -61,6 +61,7 @@ export default function Game({ puzzleId }) {
       );
 
       setGrid(res.data.puzzleGrid);
+      setSolution(res.data.solutionGrid || []);
       setLoading(false);
     };
 
@@ -70,13 +71,13 @@ export default function Game({ puzzleId }) {
 
 
 
-  /* ===================================================
-                      TIMER
-  =================================================== */
+  /* =====================================================
+                        TIMER
+  ===================================================== */
 
   useEffect(() => {
 
-    if (loading) return;
+    if (loading || gameWon) return;
 
     timerRef.current = setInterval(() => {
       setTimeElapsed(prev => prev + 1);
@@ -84,28 +85,26 @@ export default function Game({ puzzleId }) {
 
     return () => clearInterval(timerRef.current);
 
-  }, [loading]);
+  }, [loading, gameWon]);
 
 
 
-  /* ===================================================
-                    AUTOSAVE
-  =================================================== */
+  /* =====================================================
+                    AUTOSAVE SYSTEM
+  ===================================================== */
 
   useEffect(() => {
 
-    if (!grid.length || !puzzleId) return;
+    if (!grid.length || gameWon) return;
 
-    const autosave = setInterval(async () => {
+    const interval = setInterval(async () => {
 
       try {
-
         await axios.post(
           `${API}/game/save`,
           {
             puzzleId,
             currentGrid: grid,
-            pencilMarks,
             timeElapsed,
             mistakes,
             hintsLeft,
@@ -126,55 +125,119 @@ export default function Game({ puzzleId }) {
 
     }, 20000);
 
-    return () => clearInterval(autosave);
+    return () => clearInterval(interval);
 
   }, [
     grid,
-    pencilMarks,
     timeElapsed,
     mistakes,
     hintsLeft,
     score,
     puzzleId,
     token,
+    gameWon,
   ]);
 
 
 
-  /* ===================================================
+  /* =====================================================
+                WIN DETECTION
+  ===================================================== */
+
+  const checkWin = (updatedGrid) => {
+
+    if (!solution.length) return false;
+
+    for (let r = 0; r < solution.length; r++) {
+      for (let c = 0; c < solution.length; c++) {
+        if (updatedGrid[r][c] !== solution[r][c])
+          return false;
+      }
+    }
+
+    return true;
+  };
+
+
+
+  /* =====================================================
+                  COMPLETE GAME
+  ===================================================== */
+
+  const completeGame = async () => {
+
+    clearInterval(timerRef.current);
+    setGameWon(true);
+
+    try {
+
+      await axios.post(
+        `${API}/game/complete`,
+        {
+          puzzleId,
+          difficulty: "medium",
+          size: "3x3",
+          score,
+          timeTaken: timeElapsed,
+          mistakes,
+          hintsUsed: 3 - hintsLeft,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      alert("🎉 Puzzle Completed!");
+
+    } catch {
+      console.log("Completion failed");
+    }
+  };
+
+
+
+  /* =====================================================
                   CELL UPDATE
-  =================================================== */
+  ===================================================== */
 
   const updateCell = (row, col, value) => {
 
     const num = Number(value);
 
     const newGrid =
-      grid.map(r => [...r]); // ✅ deep copy
+      grid.map(r => [...r]);
 
-    newGrid[row][col] = isNaN(num) ? 0 : num;
+    newGrid[row][col] =
+      isNaN(num) ? 0 : num;
 
     setGrid(newGrid);
+
+    // ✅ Check win instantly
+    if (checkWin(newGrid)) {
+      completeGame();
+    }
   };
 
 
 
-  /* ===================================================
-                      LOADING UI
-  =================================================== */
+  /* =====================================================
+                      LOADING
+  ===================================================== */
 
   if (loading)
-    return <h2 style={{ textAlign: "center" }}>Loading Puzzle...</h2>;
+    return <h2 style={{ textAlign: "center" }}>Loading...</h2>;
 
 
 
-  /* ===================================================
-                      GAME UI
-  =================================================== */
+  /* =====================================================
+                        UI
+  ===================================================== */
 
   return (
     <div style={{ textAlign: "center" }}>
-      <h2>🧩 SudokuVerse</h2>
+      <h1>🧩 SudokuVerse</h1>
 
       <p>⏱ Time: {timeElapsed}s</p>
       <p>❌ Mistakes: {mistakes}</p>
@@ -184,10 +247,11 @@ export default function Game({ puzzleId }) {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: `repeat(${grid.length}, 40px)`,
+          gridTemplateColumns:
+            `repeat(${grid.length}, 45px)`,
           justifyContent: "center",
-          gap: "5px",
-          marginTop: "20px"
+          gap: "6px",
+          marginTop: "20px",
         }}
       >
         {grid.map((row, r) =>
@@ -198,9 +262,10 @@ export default function Game({ puzzleId }) {
               onChange={(e) =>
                 updateCell(r, c, e.target.value)
               }
+              disabled={gameWon}
               style={{
-                width: "40px",
-                height: "40px",
+                width: "45px",
+                height: "45px",
                 textAlign: "center",
                 fontSize: "18px",
               }}
@@ -208,6 +273,12 @@ export default function Game({ puzzleId }) {
           ))
         )}
       </div>
+
+      {gameWon && (
+        <h2 style={{ color: "green" }}>
+          ✅ You Won!
+        </h2>
+      )}
     </div>
   );
 }

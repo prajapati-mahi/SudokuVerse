@@ -5,7 +5,8 @@ const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
 const puzzleRoutes = require("./routes/puzzleRoutes");
 const leaderboardRoutes = require("./routes/leaderboardRoutes");
-
+const dailyRoutes = require("./routes/dailyRoutes");
+const achievementRoutes = require("./routes/achievementRoutes");
 
 require("dotenv").config();
 
@@ -23,6 +24,8 @@ app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/puzzle", puzzleRoutes);
 app.use("/api/leaderboard", leaderboardRoutes);
+app.use("/api/daily", dailyRoutes);
+app.use("/api/achievements",achievementRoutes);
 
 
 
