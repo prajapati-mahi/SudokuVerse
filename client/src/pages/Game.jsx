@@ -119,38 +119,36 @@ export default function Game({ puzzleId }) {
       </div>
 
       {/* ✅ UPDATED RESPONSIVE BOARD */}
-      <div
-        className="
-          grid
-          grid-cols-9
-          sm:grid-cols-9
-          gap-2
-          w-full
-          max-w-md
-          mx-auto
-        "
-      >
+      <div className="
+        bg-appCard
+        p-6
+        rounded-2xl
+        shadow-lg
+        max-w-md
+        mx-auto
+      ">
+
         {grid.map((row, r) =>
           row.map((cell, c) => (
             <input
-              key={`${r}-${c}`}
               value={cell || ""}
-              disabled={gameWon}
               onChange={(e) =>
                 updateCell(r, c, e.target.value)
               }
+              disabled={gameWon}
               className="
                 w-11 h-11
                 text-center
                 text-lg
-                border
-                border-white/20
+                border border-slate-700
+                bg-slate-900
+                text-white
                 rounded-md
-                bg-white/5
-                hover:bg-blue-500/20
+                hover:bg-primary/20
                 transition
                 duration-200
                 hover:scale-105
+                focus:outline-none
               "
             />
           ))

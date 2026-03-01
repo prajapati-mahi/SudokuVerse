@@ -11,6 +11,14 @@ export default function Battle() {
 const [status,setStatus]=useState("Idle");
 const [roomId,setRoomId]=useState(null);
 
+const [searching,setSearching]=
+useState(false);
+
+const findOpponent=()=>{
+  setSearching(true);
+  socket.emit("joinQueue");
+};
+
 const findMatch=()=>{
  socket.emit("findMatch");
  setStatus("Searching...");
@@ -33,7 +41,7 @@ return(
 <div>
 <h2>⚔ Multiplayer Battle</h2>
 
-<button onClick={findMatch}
+<button onClick={findOpponent}
  className="
   p-4
   text-lg
@@ -47,6 +55,7 @@ Find Opponent
 </button>
 
 <p>{status}</p>
+{searching && <p>Searching...</p>}
 
 </div>
 );

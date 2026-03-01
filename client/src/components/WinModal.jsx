@@ -16,7 +16,7 @@ export default function WinModal({ score, onRestart }) {
 
         <button
           onClick={onRestart}
-          className="mt-6 bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-xl font-semibold transition"
+          className="bg-success px-4 py-2 rounded-xl"
         >
           Play Again
         </button>

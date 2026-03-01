@@ -65,37 +65,19 @@ const Leaderboard = () => {
       {/* Tabs */}
       <div>
         <button onClick={() => setActiveTab("score")}
-          className="
-            p-4
-            text-lg
-            rounded-xl
-            bg-blue-600
-            hover:bg-blue-700
-            transition"
+          className="bg-leaderboard px-4 py-2 rounded-xl"
         >
           🏆 Highest Score
         </button>
 
         <button onClick={() => setActiveTab("time")}
-          className="
-            p-4
-            text-lg
-            rounded-xl
-            bg-blue-600
-            hover:bg-blue-700
-            transition"
+          className="bg-leaderboard px-4 py-2 rounded-xl"
         >
           ⚡ Fastest Time
         </button>
 
         <button onClick={() => setActiveTab("mistakes")}
-          className="
-            p-4
-            text-lg
-            rounded-xl
-            bg-blue-600
-            hover:bg-blue-700
-            transition"
+          className="bg-leaderboard px-4 py-2 rounded-xl"
         >
           🎯 Lowest Mistakes
         </button>

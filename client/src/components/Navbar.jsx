@@ -1,40 +1,44 @@
 import { Link } from "react-router-dom";
-import ThemeSelector from "./ThemeSelector";
-
-import { useGameStore } from "../store/useGameStore";
-import { themes } from "../utils/themeConfig";
+import { useState } from "react";
 
 export default function Navbar() {
-  const { theme } = useGameStore();
-  const currentTheme = themes[theme] || themes.classic;
+
+  const [dark, setDark] = useState(true);
+
+  const toggleTheme = () => {
+    document.documentElement.classList.toggle("dark");
+  };
+
 
   return (
-    <nav
-      className={`flex justify-between items-center px-8 py-4 border-b backdrop-blur-md ${currentTheme.card}`}
-    >
-      <Link to="/" className={`text-2xl font-bold ${currentTheme.primaryText}`}>
+    <nav className="bg-appCard shadow-md px-6 py-4 flex justify-between">
+
+      <h1 className="text-xl font-bold">
         SudokuVerse 🧩
-      </Link>
+      </h1>
 
-      <div className={`flex gap-6 items-center font-medium ${currentTheme.primaryText}`}>
-        <Link to="/play" className="hover:text-yellow-400 transition">
-          Play
-        </Link>
+      <div className="flex gap-6 items-center">
+        <Link to="/play">Play</Link>
+        <Link to="/daily">Daily</Link>
+        <Link to="/leaderboard">Leaderboard</Link>
+        <Link to="/battle">Battle</Link>
 
-        <Link to="/daily" className="hover:text-yellow-400 transition">
-          Daily Challenge
-        </Link>
+        <button
+          onClick={toggleTheme}
+          className="
+            bg-primary
+            px-4 py-2
+            rounded-lg
+            text-white
+            hover:bg-blue-700
+            transition
+          "
+        >
+          Toggle Theme
+        </button>
 
-        <Link to="/leaderboard" className="hover:text-yellow-400 transition">
-          Leaderboard
-        </Link>
-
-        <Link to="/battle" className="hover:text-yellow-400 transition">
-          Battle
-        </Link>
-
-        <ThemeSelector />
       </div>
+
     </nav>
   );
 }

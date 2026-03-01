@@ -3,6 +3,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
+import Game from "../components/Game";
 
 const API = "http://localhost:5000/api";
 
@@ -10,7 +11,7 @@ export default function Daily() {
 
   const [dailyPuzzle, setDailyPuzzle] = useState(null);
   const [loading, setLoading] = useState(true);
-
+  const [daily, setDaily] = useState(null);
   const navigate = useNavigate();
 
   /* ===============================
@@ -42,6 +43,9 @@ export default function Daily() {
             LOADING UI
   =============================== */
 
+  if (!daily)
+    return <h2>Loading Daily Challenge...</h2>;
+  
   if (loading) {
     return (
       <div className="p-6">
