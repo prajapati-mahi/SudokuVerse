@@ -9,9 +9,21 @@ const dailyRoutes = require("./routes/dailyRoutes");
 const achievementRoutes = require("./routes/achievementRoutes");
 
 require("dotenv").config();
+require("./socket/matchmaking")(io);
 
 const app = express();
 const gameRoutes = require("./routes/gameRoutes");
+const http = require("http");
+const { Server } = require("socket.io");
+
+const server = http.createServer(app);
+
+const io = new Server(server, {
+  cors: {
+    origin: "http://localhost:5173",
+    methods: ["GET", "POST"]
+  }
+});
 
 app.use("/api/game", gameRoutes);
 
@@ -42,7 +54,7 @@ mongoose
 const PORT = process.env.PORT || 5000;
 
 // Start Server
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
 

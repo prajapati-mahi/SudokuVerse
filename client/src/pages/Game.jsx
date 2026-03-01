@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
 import axios from "axios";
+import { socket } from "../socket";
 
 const API = "http://localhost:5000/api";
 
-export default function Game({ puzzleId }) {
+export default function Game({ puzzleId, roomId }) {
 
   const token = localStorage.getItem("token");
 
@@ -20,16 +21,12 @@ export default function Game({ puzzleId }) {
 
   const timerRef = useRef(null);
 
-  /* =====================================================
-        LOAD SAVED GAME OR NEW PUZZLE
-  ===================================================== */
+  /* ================= LOAD GAME ================= */
 
   useEffect(() => {
 
     const loadGame = async () => {
       try {
-
-        // ✅ Try resume
         if (puzzleId) {
           const saved = await axios.get(
             `${API}/game/load/${puzzleId}`,
@@ -50,12 +47,10 @@ export default function Game({ puzzleId }) {
             return;
           }
         }
-
       } catch {
         console.log("No saved game");
       }
 
-      // ✅ Generate new puzzle
       const res = await axios.get(
         `${API}/puzzle/generate?size=3x3&difficulty=medium`
       );
@@ -71,9 +66,7 @@ export default function Game({ puzzleId }) {
 
 
 
-  /* =====================================================
-                        TIMER
-  ===================================================== */
+  /* ================= TIMER ================= */
 
   useEffect(() => {
 
@@ -89,9 +82,28 @@ export default function Game({ puzzleId }) {
 
 
 
-  /* =====================================================
-                    AUTOSAVE SYSTEM
-  ===================================================== */
+  /* ================= SOCKET LIVE UPDATE ================= */
+
+  useEffect(() => {
+
+    if (!roomId) return;
+
+    socket.emit("gameUpdate", {
+      roomId,
+      score,
+      mistakes,
+      time: timeElapsed
+    });
+
+    socket.on("opponentUpdate",data=>{
+    setOpponent(data);
+    });
+
+  }, [score, mistakes, timeElapsed, roomId]);
+
+
+
+  /* ================= AUTOSAVE ================= */
 
   useEffect(() => {
 
@@ -140,9 +152,7 @@ export default function Game({ puzzleId }) {
 
 
 
-  /* =====================================================
-                WIN DETECTION
-  ===================================================== */
+  /* ================= WIN CHECK ================= */
 
   const checkWin = (updatedGrid) => {
 
@@ -160,9 +170,7 @@ export default function Game({ puzzleId }) {
 
 
 
-  /* =====================================================
-                  COMPLETE GAME
-  ===================================================== */
+  /* ================= COMPLETE GAME ================= */
 
   const completeGame = async () => {
 
@@ -198,23 +206,19 @@ export default function Game({ puzzleId }) {
 
 
 
-  /* =====================================================
-                  CELL UPDATE
-  ===================================================== */
+  /* ================= CELL UPDATE ================= */
 
   const updateCell = (row, col, value) => {
 
     const num = Number(value);
 
-    const newGrid =
-      grid.map(r => [...r]);
+    const newGrid = grid.map(r => [...r]);
 
     newGrid[row][col] =
       isNaN(num) ? 0 : num;
 
     setGrid(newGrid);
 
-    // ✅ Check win instantly
     if (checkWin(newGrid)) {
       completeGame();
     }
@@ -222,18 +226,14 @@ export default function Game({ puzzleId }) {
 
 
 
-  /* =====================================================
-                      LOADING
-  ===================================================== */
+  /* ================= LOADING ================= */
 
   if (loading)
     return <h2 style={{ textAlign: "center" }}>Loading...</h2>;
 
 
 
-  /* =====================================================
-                        UI
-  ===================================================== */
+  /* ================= UI ================= */
 
   return (
     <div style={{ textAlign: "center" }}>
