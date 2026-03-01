@@ -1,5 +1,9 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { motion } from "framer-motion";
+import Skeleton from "react-loading-skeleton";
+import "react-loading-skeleton/dist/skeleton.css";
+
 
 const Leaderboard = () => {
 
@@ -60,15 +64,39 @@ const Leaderboard = () => {
 
       {/* Tabs */}
       <div>
-        <button onClick={() => setActiveTab("score")}>
+        <button onClick={() => setActiveTab("score")}
+          className="
+            p-4
+            text-lg
+            rounded-xl
+            bg-blue-600
+            hover:bg-blue-700
+            transition"
+        >
           🏆 Highest Score
         </button>
 
-        <button onClick={() => setActiveTab("time")}>
+        <button onClick={() => setActiveTab("time")}
+          className="
+            p-4
+            text-lg
+            rounded-xl
+            bg-blue-600
+            hover:bg-blue-700
+            transition"
+        >
           ⚡ Fastest Time
         </button>
 
-        <button onClick={() => setActiveTab("mistakes")}>
+        <button onClick={() => setActiveTab("mistakes")}
+          className="
+            p-4
+            text-lg
+            rounded-xl
+            bg-blue-600
+            hover:bg-blue-700
+            transition"
+        >
           🎯 Lowest Mistakes
         </button>
       </div>

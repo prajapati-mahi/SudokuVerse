@@ -1,10 +1,14 @@
 import React, { useEffect, useRef, useState } from "react";
 import axios from "axios";
-import { socket } from "../socket";
+import { motion } from "framer-motion";
+import confetti from "canvas-confetti";
+import Skeleton from "react-loading-skeleton";
+import "react-loading-skeleton/dist/skeleton.css";
+
 
 const API = "http://localhost:5000/api";
 
-export default function Game({ puzzleId, roomId }) {
+export default function Game({ puzzleId }) {
 
   const token = localStorage.getItem("token");
 
@@ -24,32 +28,7 @@ export default function Game({ puzzleId, roomId }) {
   /* ================= LOAD GAME ================= */
 
   useEffect(() => {
-
     const loadGame = async () => {
-      try {
-        if (puzzleId) {
-          const saved = await axios.get(
-            `${API}/game/load/${puzzleId}`,
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            }
-          );
-
-          if (saved.data) {
-            setGrid(saved.data.currentGrid);
-            setTimeElapsed(saved.data.timeElapsed || 0);
-            setMistakes(saved.data.mistakes || 0);
-            setHintsLeft(saved.data.hintsLeft || 3);
-            setScore(saved.data.score || 0);
-            setLoading(false);
-            return;
-          }
-        }
-      } catch {
-        console.log("No saved game");
-      }
 
       const res = await axios.get(
         `${API}/puzzle/generate?size=3x3&difficulty=medium`
@@ -61,15 +40,11 @@ export default function Game({ puzzleId, roomId }) {
     };
 
     loadGame();
-
-  }, [puzzleId, token]);
-
-
+  }, []);
 
   /* ================= TIMER ================= */
 
   useEffect(() => {
-
     if (loading || gameWon) return;
 
     timerRef.current = setInterval(() => {
@@ -77,145 +52,41 @@ export default function Game({ puzzleId, roomId }) {
     }, 1000);
 
     return () => clearInterval(timerRef.current);
-
   }, [loading, gameWon]);
-
-
-
-  /* ================= SOCKET LIVE UPDATE ================= */
-
-  useEffect(() => {
-
-    if (!roomId) return;
-
-    socket.emit("gameUpdate", {
-      roomId,
-      score,
-      mistakes,
-      time: timeElapsed
-    });
-
-    socket.on("opponentUpdate",data=>{
-    setOpponent(data);
-    });
-
-  }, [score, mistakes, timeElapsed, roomId]);
-
-
-
-  /* ================= AUTOSAVE ================= */
-
-  useEffect(() => {
-
-    if (!grid.length || gameWon) return;
-
-    const interval = setInterval(async () => {
-
-      try {
-        await axios.post(
-          `${API}/game/save`,
-          {
-            puzzleId,
-            currentGrid: grid,
-            timeElapsed,
-            mistakes,
-            hintsLeft,
-            score,
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        console.log("✅ Autosaved");
-
-      } catch {
-        console.log("Autosave failed");
-      }
-
-    }, 20000);
-
-    return () => clearInterval(interval);
-
-  }, [
-    grid,
-    timeElapsed,
-    mistakes,
-    hintsLeft,
-    score,
-    puzzleId,
-    token,
-    gameWon,
-  ]);
-
-
 
   /* ================= WIN CHECK ================= */
 
   const checkWin = (updatedGrid) => {
-
-    if (!solution.length) return false;
-
     for (let r = 0; r < solution.length; r++) {
       for (let c = 0; c < solution.length; c++) {
         if (updatedGrid[r][c] !== solution[r][c])
           return false;
       }
     }
-
     return true;
   };
 
+  /* ================= COMPLETE ================= */
 
-
-  /* ================= COMPLETE GAME ================= */
-
-  const completeGame = async () => {
+  const completeGame = () => {
 
     clearInterval(timerRef.current);
     setGameWon(true);
 
-    try {
-
-      await axios.post(
-        `${API}/game/complete`,
-        {
-          puzzleId,
-          difficulty: "medium",
-          size: "3x3",
-          score,
-          timeTaken: timeElapsed,
-          mistakes,
-          hintsUsed: 3 - hintsLeft,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      alert("🎉 Puzzle Completed!");
-
-    } catch {
-      console.log("Completion failed");
-    }
+    confetti({
+      particleCount: 150,
+      spread: 90,
+    });
   };
 
-
-
-  /* ================= CELL UPDATE ================= */
+  /* ================= UPDATE CELL ================= */
 
   const updateCell = (row, col, value) => {
 
     const num = Number(value);
 
     const newGrid = grid.map(r => [...r]);
-
-    newGrid[row][col] =
-      isNaN(num) ? 0 : num;
+    newGrid[row][col] = isNaN(num) ? 0 : num;
 
     setGrid(newGrid);
 
@@ -224,61 +95,74 @@ export default function Game({ puzzleId, roomId }) {
     }
   };
 
-
-
-  /* ================= LOADING ================= */
-
   if (loading)
-    return <h2 style={{ textAlign: "center" }}>Loading...</h2>;
-
-
+    return <h2 className="text-center mt-10">Loading...</h2>;
 
   /* ================= UI ================= */
 
   return (
-    <div style={{ textAlign: "center" }}>
-      <h1>🧩 SudokuVerse</h1>
+    <motion.div
+      className="text-center p-6 text-white"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+    >
 
-      <p>⏱ Time: {timeElapsed}s</p>
-      <p>❌ Mistakes: {mistakes}</p>
-      <p>💡 Hints Left: {hintsLeft}</p>
-      <p>⭐ Score: {score}</p>
+      <h1 className="text-3xl font-bold mb-4">
+        🧩 SudokuVerse
+      </h1>
 
+      <div className="flex justify-center gap-6 mb-6">
+        <p>⏱ {timeElapsed}s</p>
+        <p>❌ {mistakes}</p>
+        <p>💡 {hintsLeft}</p>
+        <p>⭐ {score}</p>
+      </div>
+
+      {/* ✅ UPDATED RESPONSIVE BOARD */}
       <div
-        style={{
-          display: "grid",
-          gridTemplateColumns:
-            `repeat(${grid.length}, 45px)`,
-          justifyContent: "center",
-          gap: "6px",
-          marginTop: "20px",
-        }}
+        className="
+          grid
+          grid-cols-9
+          sm:grid-cols-9
+          gap-2
+          w-full
+          max-w-md
+          mx-auto
+        "
       >
         {grid.map((row, r) =>
           row.map((cell, c) => (
             <input
               key={`${r}-${c}`}
               value={cell || ""}
+              disabled={gameWon}
               onChange={(e) =>
                 updateCell(r, c, e.target.value)
               }
-              disabled={gameWon}
-              style={{
-                width: "45px",
-                height: "45px",
-                textAlign: "center",
-                fontSize: "18px",
-              }}
+              className="
+                w-11 h-11
+                text-center
+                text-lg
+                border
+                border-white/20
+                rounded-md
+                bg-white/5
+                hover:bg-blue-500/20
+                transition
+                duration-200
+                hover:scale-105
+              "
             />
           ))
         )}
       </div>
 
       {gameWon && (
-        <h2 style={{ color: "green" }}>
+        <h2 className="text-green-400 text-2xl mt-6">
           ✅ You Won!
         </h2>
       )}
-    </div>
+
+    </motion.div>
   );
 }

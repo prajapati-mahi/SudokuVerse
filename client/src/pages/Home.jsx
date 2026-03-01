@@ -1,4 +1,8 @@
 import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
+import Skeleton from "react-loading-skeleton";
+import "react-loading-skeleton/dist/skeleton.css";
+
 
 export default function Home() {
   return (

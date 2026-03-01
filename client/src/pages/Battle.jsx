@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react";
 import { socket } from "../socket";
+import { motion } from "framer-motion";
+import Skeleton from "react-loading-skeleton";
+import "react-loading-skeleton/dist/skeleton.css";
+
+
 
 export default function Battle() {
 
@@ -28,7 +33,16 @@ return(
 <div>
 <h2>⚔ Multiplayer Battle</h2>
 
-<button onClick={findMatch}>
+<button onClick={findMatch}
+ className="
+  p-4
+  text-lg
+  rounded-xl
+  bg-blue-600
+  hover:bg-blue-700
+  transition
+ "
+>
 Find Opponent
 </button>
 

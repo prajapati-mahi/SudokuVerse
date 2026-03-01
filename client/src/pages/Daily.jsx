@@ -1,5 +1,9 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { motion } from "framer-motion";
+import Skeleton from "react-loading-skeleton";
+import "react-loading-skeleton/dist/skeleton.css";
+
 
 export default function Daily() {
 
@@ -13,7 +17,8 @@ export default function Daily() {
 
   },[]);
 
-  if(!challenge) return <p>Loading...</p>;
+  if(!challenge) return <p><Skeleton height={40} count={5} />
+</p>;
 
   return (
     <div>
