@@ -3,7 +3,6 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
-import Game from "../components/Game";
 
 const API = "http://localhost:5000/api";
 
@@ -11,7 +10,7 @@ export default function Daily() {
 
   const [dailyPuzzle, setDailyPuzzle] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [daily, setDaily] = useState(null);
+
   const navigate = useNavigate();
 
   /* ===============================
@@ -22,6 +21,7 @@ export default function Daily() {
 
     const fetchDaily = async () => {
       try {
+
         const res = await axios.get(
           `${API}/daily/today`
         );
@@ -29,10 +29,14 @@ export default function Daily() {
         setDailyPuzzle(res.data);
 
       } catch (error) {
-        console.log("Daily challenge fetch failed");
-      }
 
-      setLoading(false);
+        console.log("Daily challenge fetch failed");
+
+      } finally {
+
+        setLoading(false);
+
+      }
     };
 
     fetchDaily();
@@ -43,15 +47,20 @@ export default function Daily() {
             LOADING UI
   =============================== */
 
-  if (!daily)
-    return <h2>Loading Daily Challenge...</h2>;
-  
   if (loading) {
     return (
-      <div className="p-6">
-        <Skeleton height={40} />
-        <Skeleton height={40} count={4} />
+      <div className="p-6 max-w-md mx-auto">
+        <Skeleton height={40} className="mb-4" />
+        <Skeleton height={30} count={3} />
       </div>
+    );
+  }
+
+  if (!dailyPuzzle) {
+    return (
+      <h2 className="text-center text-red-400">
+        Daily challenge unavailable
+      </h2>
     );
   }
 
@@ -66,16 +75,25 @@ export default function Daily() {
         📅 Daily Sudoku Challenge
       </h1>
 
-      <div className="bg-white/10 p-6 rounded-2xl max-w-md mx-auto">
+      <div
+        className="
+        bg-appCard
+        p-6
+        rounded-2xl
+        shadow-lg
+        max-w-md
+        mx-auto
+      "
+      >
 
-        <p className="mb-2">
+        <p className="mb-2 text-lg">
           🧩 Size:
           <span className="text-blue-400 ml-2">
             {dailyPuzzle.size}
           </span>
         </p>
 
-        <p className="mb-4">
+        <p className="mb-4 text-lg">
           ⚡ Difficulty:
           <span className="text-pink-400 ml-2">
             {dailyPuzzle.difficulty}
@@ -89,13 +107,14 @@ export default function Daily() {
             )
           }
           className="
-            bg-blue-600
+            bg-primary
             hover:bg-blue-700
             transition
             px-6
             py-3
             rounded-xl
             text-lg
+            font-semibold
           "
         >
           ▶ Play Daily Challenge

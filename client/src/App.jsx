@@ -10,10 +10,11 @@ import Profile from "./pages/Profile";
 export default function App() {
   return (
     <BrowserRouter>
-      <div className="min-h-screen bg-white dark:bg-appDark text-black dark:text-white">        
+      <div className="min-h-screen w-full bg-slate-950 text-white">
+        
         <Navbar />
 
-        {/*  CENTERED RESPONSIVE CONTAINER */}
+        {/* ✅ CENTERED RESPONSIVE CONTAINER */}
         <div className="max-w-6xl mx-auto px-4 py-6">
           <Routes>
             <Route path="/" element={<Play />} />

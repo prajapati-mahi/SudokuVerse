@@ -6,12 +6,12 @@ export default function Navbar() {
   const [dark, setDark] = useState(true);
 
   const toggleTheme = () => {
+    setDark(!dark);
     document.documentElement.classList.toggle("dark");
   };
 
-
   return (
-    <nav className="bg-appCard shadow-md px-6 py-4 flex justify-between">
+    <nav className="bg-slate-900 px-6 py-4 flex justify-between items-center">
 
       <h1 className="text-xl font-bold">
         SudokuVerse 🧩
@@ -25,18 +25,10 @@ export default function Navbar() {
 
         <button
           onClick={toggleTheme}
-          className="
-            bg-primary
-            px-4 py-2
-            rounded-lg
-            text-white
-            hover:bg-blue-700
-            transition
-          "
+          className="bg-blue-600 px-3 py-1 rounded"
         >
-          Toggle Theme
+          {dark ? "Day ☀️" : "Night 🌙"}
         </button>
-
       </div>
 
     </nav>
