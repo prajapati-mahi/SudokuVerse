@@ -12,6 +12,18 @@ const Leaderboard = () => {
 
   const API = "http://localhost:5000/api";
 
+  const [tab,setTab]=useState("score");
+
+  <button
+  onClick={()=>setTab("score")}
+  className={`px-4 py-2 rounded
+  ${tab==="score"
+  ?"bg-blue-600"
+  :"bg-slate-700"}`}
+  >
+  🏆 Highest Score
+  </button>
+
   /* ======================
         FETCH DATA
   ====================== */

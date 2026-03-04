@@ -1,73 +1,73 @@
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
-const authRoutes = require("./routes/authRoutes");
-const userRoutes = require("./routes/userRoutes");
-const puzzleRoutes = require("./routes/puzzleRoutes");
-const leaderboardRoutes = require("./routes/leaderboardRoutes");
-const dailyRoutes = require("./routes/dailyRoutes");
-const achievementRoutes = require("./routes/achievementRoutes");
-
-require("dotenv").config();
-require("./socket/matchmaking")(io);
-
-const app = express();
-const gameRoutes = require("./routes/gameRoutes");
 const http = require("http");
 const { Server } = require("socket.io");
 
-const server = http.createServer(app);
+require("dotenv").config();
 
-const io = new Server(server, {
-  cors: {
-    origin: "http://localhost:5173",
-    methods: ["GET", "POST"]
-  }
-});
+const app = express();
 
-app.use("/api/game", gameRoutes);
+/* ===============================
+   MIDDLEWARE
+=============================== */
 
-
-// Middleware
 app.use(cors());
 app.use(express.json());
+
+/* ===============================
+   ROUTES
+=============================== */
+
+const authRoutes = require("./routes/authRoutes");
+const userRoutes = require("./routes/userRoutes");
+const puzzleRoutes = require("./routes/puzzleRoutes");
 
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/puzzle", puzzleRoutes);
-app.use("/api/leaderboard", leaderboardRoutes);
-app.use("/api/daily", dailyRoutes);
-app.use("/api/achievements",achievementRoutes);
 
+/* ===============================
+   TEST ROUTE
+=============================== */
 
-
-// Test Route
 app.get("/", (req, res) => {
   res.send("SudokuVerse Backend Running 🚀");
 });
+
+/* ===============================
+   DATABASE CONNECTION
+=============================== */
 
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB Connected Successfully"))
   .catch((err) => console.log("MongoDB Connection Error:", err));
-// Port
-const PORT = process.env.PORT || 5000;
 
-// Start Server
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+/* ===============================
+   CREATE SERVER + SOCKET.IO
+=============================== */
+
+const server = http.createServer(app);
+
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+  },
 });
 
-app.use((err, req, res, next) => {
-  console.error("Global Error:", err);
+/* ===============================
+   SOCKET MATCHMAKING
+=============================== */
 
-  if (err instanceof require("multer").MulterError) {
-    return res.status(400).json({ message: err.message });
-  }
+require("./socket/matchmaking")(io);
 
-  // if (err.message === "Unexpected end of form") {
-  //   return res.status(400).json({ message: "File upload failed - incomplete form data" });
-  // }
+/* ===============================
+   START SERVER
+=============================== */
 
-  res.status(500).json({ message: "Server error", error: err.message });
+const PORT = process.env.PORT || 5000;
+
+server.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });

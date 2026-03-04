@@ -29,13 +29,10 @@ export default function Play() {
               navigate(`/play?difficulty=${level}`)
             }
             className="
-              bg-primary
+              bg-blue-600
               hover:bg-blue-700
-              text-white
-              px-4 py-2
-              rounded-xl
-              transition
-              "
+              p-4 rounded-xl
+            "
           >
             {level.toUpperCase()}
           </button>
